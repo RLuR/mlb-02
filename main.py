@@ -64,7 +64,7 @@ pd.set_option('display.max_colwidth', None)
 
 def main():
     # remove unnecessary header and footer file
-    data = pd.read_csv("original_data/wine_exercise.csv", skiprows=1, skipfooter=1, sep=";")
+    data = pd.read_csv("data/wine_exercise.csv", skiprows=1, skipfooter=1, sep=";")
     #### Repair dataset ####
     data["ash"] = data["ash"].replace("missing", np.nan)
     data["malic_acid"] = data["malic_acid"].replace("-999", np.nan)
@@ -121,7 +121,9 @@ def main():
 
     # Class distributions
 
+    print(data.groupby(['season','country'])['target'].value_counts())
 
+    print(data.groupby('color')['magnesium'].describe())
 
 
 def remove_outliers(column):

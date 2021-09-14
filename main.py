@@ -51,8 +51,8 @@ the dataset includes all kinds of errors
 
 
 # set pandas options to make sure you see all info when printing dfs
-import pandas as pd
 import numpy as np
+import pandas as pd
 from sklearn.impute import KNNImputer
 from sklearn.datasets import load_wine
 from scipy.stats import norm
@@ -66,14 +66,35 @@ def main():
     # remove unnecessary header and footer file
     data = pd.read_csv("data/wine_exercise.csv", skiprows=1, skipfooter=1, sep=";")
     #### Repair dataset ####
+
+    # get expected seperators
+    expected_seperators = len(data.columns) -1
+
+    # Fix seperators
+    f = open("data/wine_exercise.csv", "r+")
+    temp_file = open("temp.csv", "r+")
+
+    for line in f:
+        if line.count(";") < expected_seperators:
+            line = line.replace(",", ";")
+        temp_file.write(line)
+
+    temp_file.close()
+    f.close()
+
+    # remove unnecessary header and footer file
+    data = pd.read_csv("temp.csv", skiprows=1, skipfooter=1, sep=";")
+
+    # replace missing values with nan
     data["ash"] = data["ash"].replace("missing", np.nan)
     data["malic_acid"] = data["malic_acid"].replace("-999", np.nan)
     data["proline"] = data["proline"].replace(0.0, np.nan)
-    # for now drop problematic rows
-    badline = data.iloc[50]
-    badline2 = data.iloc[142]
-    badline3 = data.iloc[166]
-    data = data.drop([50, 142, 166], axis=0)
+
+    # manually fix line where data is in wrong column
+    wrong_column = data["magnesium"][166].split(" ")
+    data["magnesium"].iloc[166] = wrong_column[0]
+    data["total_phenols"].iloc[166] = wrong_column[1]
+
     # fix commas
     data = data.astype(str)
     data = data.apply(lambda x: x.str.replace(',', '.'))
@@ -108,6 +129,8 @@ def main():
     data["magnesium"] = remove_outliers(data["magnesium"])
     data["total_phenols"] = remove_outliers(data["total_phenols"])
 
+    print(f"Removed magnesium outliers: {data['magnesium'].isnull().sum()}")
+    print(f"Removed total_phenols outliers: {data['total_phenols'].isnull().sum()}")
     # Impute data
 
     original_headers = load_wine()["feature_names"]
@@ -121,7 +144,7 @@ def main():
 
     # Class distributions
 
-    print(data.groupby(['season','country'])['target'].value_counts())
+    print(data.groupby('target').describe())
 
     print(data.groupby('color')['magnesium'].describe())
 
@@ -129,7 +152,7 @@ def main():
 def remove_outliers(column):
     mean, std = norm.fit(column)
     low_cutoff = norm.ppf(.0125, loc=mean, scale=std)
-    high_cutoff = norm.ppf(.99875, loc=mean, scale=std)
+    high_cutoff = norm.ppf(.9875, loc=mean, scale=std)
     return column.apply(lambda x: x if low_cutoff <= x <= high_cutoff else np.nan)
 
 if __name__ == "__main__":
